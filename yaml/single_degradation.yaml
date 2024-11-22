@@ -62,7 +62,7 @@ deg_T: 0.07
 deg_m: 0.999
 deg_ckpt_dir: ./ckpt/single_degradation/blur.ckpt
 
-gen_model_name: DFNet
+gen_model_name: DFVEN
 gen_in_nc: 3
 gen_out_nc: 3
 gen_nf: 64
@@ -75,7 +75,7 @@ temp_ckpt_dir: ./ckpt/single_degradation/temp.ckpt
 tempo_range: 4
 degrade_epoch: 100
 generator_epoch1: 6
-generator_epoch2: 1
+generator_epoch2: 2
 
 deg_lr: !!float 1e-4
 deg_scheduler: StepLR

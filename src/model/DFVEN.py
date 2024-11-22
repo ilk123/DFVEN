@@ -102,9 +102,9 @@ class ResNetBlock(nn.Module):
         return out
 
 
-class Dfnet(nn.Module):
+class Dfven(nn.Module):
     def __init__(self, opt, **kwargs):
-        super(Dfnet, self).__init__()
+        super(Dfven, self).__init__()
         for kw, args in opt.items():
             setattr(self, kw, args)
         

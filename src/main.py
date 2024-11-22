@@ -119,7 +119,6 @@ def test_degrade(opt):
             log_graph=True
         )
     data_module = DDInterface(**opt)
-    # model = DMInterface(**opt, **{'i': 0})
     model = DMInterface(**opt)
     trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger)
     trainer.test(model, data_module)

@@ -53,9 +53,9 @@ class SRNet_Single(nn.Module):
         return out
 
 
-class DrnetFour(nn.Module):
+class DrenFour(nn.Module):
     def __init__(self, opt, **kwargs):
-        super(DrnetFour, self).__init__()
+        super(DrenFour, self).__init__()
         for kw, args in opt.items():
             setattr(self, kw, args)
         

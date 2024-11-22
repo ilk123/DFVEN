@@ -9,9 +9,9 @@ from .LiteFlowNet.LFNet import LFNet
 from .utils import get_patch, patch_clip
 
 
-class DfnetFour(nn.Module):
+class DfvenFour(nn.Module):
     def __init__(self, opt, **kwargs):
-        super(DfnetFour, self).__init__()
+        super(DfvenFour, self).__init__()
         for kw, args in opt.items():
             setattr(self, kw, args)
         

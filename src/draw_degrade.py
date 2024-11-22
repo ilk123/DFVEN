@@ -30,9 +30,6 @@ class RedModifyTest(nn.Module):
                 lr_r.append(_lr_r)
             lr_r = torch.concat(lr_r, dim=1)
         
-        # xy = random.choice(self.xy)
-        # x = np.array([xy[:, 0]])
-        # y = np.array([xy[:, 1]])
         poly = []
         for i in range(batch):
             X = [0, self.xy[i][0], 255]
@@ -42,7 +39,6 @@ class RedModifyTest(nn.Module):
         
             coefficients = torch.from_numpy(np.array(poly))
         
-        # for i in range(batch):
             lr_r[i, ...] = self._evaluate_polynomial(coefficients[i], lr_r[i, ...])
 
         if lr_tensor.size()[1] == 6:

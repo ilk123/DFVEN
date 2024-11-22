@@ -113,7 +113,7 @@ class BaseEncoderWithoutTail(nn.Module):
     def __init__(self, in_nc):
         super(BaseEncoderWithoutTail, self).__init__()
 
-        self.resnet = models.resnet101()
+        self.resnet = models.resnet18()
 
         self.features = None
         self.resnet.avgpool.register_forward_hook(self.hook_fn)

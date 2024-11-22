@@ -34,36 +34,36 @@ class MInterface(pl.LightningModule):
         return self.model.infer(lr)
     
     def on_train_start(self):
-        # if self.global_step == 0:
-        #     D_state_dict = torch.load(self.hparams.deg_ckpt_dir[0])
-        #     GD_state_dict = {k: v for k, v in D_state_dict.items() if k in self.model.Dnet.state_dict()}
-        #     self.model.Dnet.load_state_dict(GD_state_dict)
+        if self.hparams.degrade_type == 'all' and self.hparams.deg_ckpt_dir is not None:
+            if self.global_step == 0:
+                D_state_dict1 = torch.load(self.hparams.deg_ckpt_dir[0])
+                GD_state_dict1 = {k: v for k, v in D_state_dict1.items() if k in self.model.Dnet1.state_dict()}
+                self.model.Dnet1.load_state_dict(GD_state_dict1)
+
+                D_state_dict2 = torch.load(self.hparams.deg_ckpt_dir[1])
+                GD_state_dict2 = {k: v for k, v in D_state_dict2.items() if k in self.model.Dnet2.state_dict()}
+                self.model.Dnet2.load_state_dict(GD_state_dict2)
+
+                D_state_dict3 = torch.load(self.hparams.deg_ckpt_dir[2])
+                GD_state_dict3 = {k: v for k, v in D_state_dict3.items() if k in self.model.Dnet3.state_dict()}
+                self.model.Dnet3.load_state_dict(GD_state_dict3)
+
+                D_state_dict4 = torch.load(self.hparams.deg_ckpt_dir[3])
+                GD_state_dict4 = {k: v for k, v in D_state_dict4.items() if k in self.model.Dnet4.state_dict()}
+                self.model.Dnet4.load_state_dict(GD_state_dict4)
+            
+            self.model.Dnet1.queue_ptr = torch.zeros(1, dtype=torch.long)
+            self.model.Dnet2.queue_ptr = torch.zeros(1, dtype=torch.long)
+            self.model.Dnet3.queue_ptr = torch.zeros(1, dtype=torch.long)
+            self.model.Dnet4.queue_ptr = torch.zeros(1, dtype=torch.long)
         
-        # self.model.Dnet.queue_ptr = torch.zeros(1, dtype=torch.long)
-    
-        pass
-
-        # if self.global_step == 0:
-        #     D_state_dict1 = torch.load(self.hparams.deg_ckpt_dir[0])
-        #     GD_state_dict1 = {k: v for k, v in D_state_dict1.items() if k in self.model.Dnet1.state_dict()}
-        #     self.model.Dnet1.load_state_dict(GD_state_dict1)
-
-        #     D_state_dict2 = torch.load(self.hparams.deg_ckpt_dir[1])
-        #     GD_state_dict2 = {k: v for k, v in D_state_dict2.items() if k in self.model.Dnet2.state_dict()}
-        #     self.model.Dnet2.load_state_dict(GD_state_dict2)
-
-        #     D_state_dict3 = torch.load(self.hparams.deg_ckpt_dir[2])
-        #     GD_state_dict3 = {k: v for k, v in D_state_dict3.items() if k in self.model.Dnet3.state_dict()}
-        #     self.model.Dnet3.load_state_dict(GD_state_dict3)
-
-        #     D_state_dict4 = torch.load(self.hparams.deg_ckpt_dir[3])
-        #     GD_state_dict4 = {k: v for k, v in D_state_dict4.items() if k in self.model.Dnet4.state_dict()}
-        #     self.model.Dnet4.load_state_dict(GD_state_dict4)
-        
-        # self.model.Dnet1.queue_ptr = torch.zeros(1, dtype=torch.long)
-        # self.model.Dnet2.queue_ptr = torch.zeros(1, dtype=torch.long)
-        # self.model.Dnet3.queue_ptr = torch.zeros(1, dtype=torch.long)
-        # self.model.Dnet4.queue_ptr = torch.zeros(1, dtype=torch.long)
+        elif self.hparams.deg_ckpt_dir is not None:
+            if self.global_step == 0:
+                D_state_dict = torch.load(self.hparams.deg_ckpt_dir[0])
+                GD_state_dict = {k: v for k, v in D_state_dict.items() if k in self.model.Dnet.state_dict()}
+                self.model.Dnet.load_state_dict(GD_state_dict)
+            
+            self.model.Dnet.queue_ptr = torch.zeros(1, dtype=torch.long)
     
     def on_train_epoch_start(self):
         self.degrade_data_generator = DataPrepare(self.device, self.hparams, self.hparams.degrade_type)
