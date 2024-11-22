@@ -1,0 +1,1 @@
+If you want to train or test a DREN or DREN_four model for single images instead of videos, replace the files of the same name in the parent folder with these files.
