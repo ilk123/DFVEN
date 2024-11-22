@@ -18,22 +18,10 @@ for tag in tags:
 
 for tag, (step, value) in losses.items():
     if tag == 'p_loss_epoch':
-        plt.subplot(2, 3, 1)
+        plt.subplot(2, 1, 1)
         plt.plot(step, value, label=tag)
     if tag == 'd_loss_epoch':
-        plt.subplot(2, 3, 2)
-        plt.plot(step, value, label=tag)
-    if tag == 'pp_loss_epoch':
-        plt.subplot(2, 3, 3)
-        plt.plot(step, value, label=tag)
-    if tag == 'g_loss_epoch':
-        plt.subplot(2, 3, 4)
-        plt.plot(step, value, label=tag)
-    if tag == 'G_Loss_epoch':
-        plt.subplot(2, 3, 5)
-        plt.plot(step, value, label=tag)
-    if tag == 'D_Loss_epoch':
-        plt.subplot(2, 3, 6)
+        plt.subplot(2, 1, 2)
         plt.plot(step, value, label=tag)
 
 plt.xlabel('Steps')

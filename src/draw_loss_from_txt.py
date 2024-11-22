@@ -15,13 +15,13 @@ def plot(x, y, i, label):
 
 i = 0
 batch = []
-Loss = {'p_loss': [], 'd_loss': [], 'pp_loss': [], 'g_loss': [], 'G_Loss': [], 'D_Loss': []}
+Loss = {'p_loss': [], 'd_loss': []}
 with open(file_name, 'r') as f:
     line = f.readline()
     while line != '':
         print(i)
         str = line.split(':')
-        if i % 7 == 0:
+        if i % 3 == 0:
             batch.append(int(str[0]))
         else:
             Loss[str[0]].append(float(str[1]))
@@ -32,10 +32,6 @@ print(len(batch), len(Loss['p_loss']))
 
 plot(batch, Loss['p_loss'], 1, 'p_loss')
 plot(batch, Loss['d_loss'], 2, 'd_loss')
-plot(batch, Loss['pp_loss'], 3, 'pp_loss')
-plot(batch, Loss['g_loss'], 4, 'g_loss')
-plot(batch, Loss['G_Loss'], 5, 'G_Loss')
-plot(batch, Loss['D_Loss'], 6, 'D_Loss')
 
 # 显示图形
 plt.show()

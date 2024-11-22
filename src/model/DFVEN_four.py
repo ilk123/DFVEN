@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-from .DFNet import SRNet, ResNetBlock
+from .DFVEN import SRNet, ResNetBlock
 from .DNet import DnetWithoutTail
 from .LiteFlowNet.LFNet import LFNet
 from .utils import get_patch, patch_clip
