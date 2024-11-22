@@ -99,82 +99,36 @@ def test(opt):
     if opt['logger'] == 'tensorboard':
         tb_logger = pl_loggers.TensorBoardLogger(
             save_dir=opt['logger_dir'], 
-            version='test', 
+            name=None, 
+            version=opt['degrade_type']+'/test', 
             log_graph=False
         )
 
     data_module = DInterface(**opt, **{'train_data_name': opt['train_data_name2'], 'train_data_dir': opt['train_data_dir2']})
     model = MInterface(**opt)
     trainer = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger)
-    trainer.test(model, data_module, opt['gen_load_path'])
+    trainer.test(model, data_module)
+    # trainer.test(model, data_module, opt['gen_load_path'])
 
 def test_degrade(opt):
     if opt['logger'] == 'tensorboard':
         tb_logger = pl_loggers.TensorBoardLogger(
             save_dir=opt['logger_dir'], 
-            version='test_degrade', 
+            name=None, 
+            version=opt['degrade_type']+'/test_degrade', 
             log_graph=True
         )
     data_module = DDInterface(**opt)
     # model = DMInterface(**opt, **{'i': 0})
     model = DMInterface(**opt)
     trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger)
-    # trainer.test(model, data_module)
-    trainer.test(model, data_module, opt['deg_load_path'])
-
-# 测试视频并保存视频
-def predict(opt):
-    model = MInterface.load_from_checkpoint(opt['gen_load_path'])
-    model.eval()
-    device = torch.device('cuda:0')
-
-    for i in range(1, 7):
-        video_path = f'/home/xhd/PELD/enhancement/data/video/Encode_1080P_{i}.mp4'
-        output_path = f'./output/Encode_1080P_{i}.mp4'
-        img_size = (3840, 2160)
-
-        cap = cv2.VideoCapture(video_path)
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        out = cv2.VideoWriter(output_path, fourcc, 30, img_size)
-
-        data = {}
-        j = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if ret:
-                input = np2Tensor(frame).unsqueeze(0).to(device)
-                if j == 0:
-                    data['lr_prev'] = input
-                    data['hr_prev'] = np2Tensor(cv2.resize(frame, dsize=None, fx=2, fy=2)).unsqueeze(0).to(device)
-                data['lr_curr'] = input
-                
-                with torch.no_grad():
-                    output_tensor = model(data, is_seq=False)
-                output = float32_to_uint8(output_tensor.cpu().numpy()).transpose(0, 2, 3, 1).squeeze(0)
-
-                out.write(output)
-                cv2.imshow('1', output)
-                key = cv2.waitKey(1)
-                if key == 32:
-                    break
-
-                j += 1
-                data['lr_prev'] = input
-                data['hr_prev'] = output_tensor
-                print(i, j)
-            
-            else:
-                cap.release()
-                out.release()
-        out.release()
-        cap.release()
-    
-    out.release()
+    trainer.test(model, data_module)
+    # trainer.test(model, data_module, opt['deg_load_path'])
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
-    parser.add_argument('--mode', default='train', type=str)
+    parser.add_argument('--mode', default='test', type=str)
     args = parser.parse_args()
 
     with open(osp.join('./yaml', args.opt_yaml), 'r') as f:
@@ -195,9 +149,6 @@ if __name__ == '__main__':
     elif args.mode == 'test':
         opt['is_train'] = False
         test(opt)
-    elif args.mode == 'predict':
-        opt['is_train'] = False
-        predict(opt)
     elif args.mode == 'train_degrade':
         opt['is_train'] = True
         train_degrade(opt)

@@ -39,7 +39,6 @@ def compute_SSIM(true_img_cur, pred_img_cur, ssim_colorspace):
         raise ValueError('Unrecognized colorspace type: {}'.format(ssim_colorspace))
     
     SSIM = ssim(true_img, pred_img)
-    # SSIM = ssim(true_img, pred_img, channel_axis=2)
     return SSIM
 
 def compute_LPIPS(img1, img2):
@@ -64,14 +63,6 @@ def compute_LPIPS(img1, img2):
         LPIPS = dm.forward(img1, img2)
     
     return LPIPS
-
-# def compute_LPIPS(self):
-#     true_img = np.ascontiguousarray(self.true_img_cur)
-#     pred_img = np.ascontiguousarray(self.pred_img_cur)
-    
-#     LPIPS = _compute_LPIPS(true_img, pred_img)
-
-#     return LPIPS
 
 def compute_tOF(true_img_cur, pred_img_cur, true_img_pre, pred_img_pre):
     true_img_cur = cv2.cvtColor(true_img_cur, cv2.COLOR_RGB2GRAY)

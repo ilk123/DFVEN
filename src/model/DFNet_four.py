@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-from .common import SRNet, ResNetBlock
+from .DFNet import SRNet, ResNetBlock
 from .DNet import DnetWithoutTail
 from .LiteFlowNet.LFNet import LFNet
 from .utils import get_patch, patch_clip
@@ -129,24 +129,24 @@ class DfnetFour(nn.Module):
         neigbor = lr[:, 1:, ...]
 
         flow_frame = []
-        # 计算流场
+        # calculate optical flows
         for i in range(t - 1):
             with torch.no_grad():
                 flow_frame.append(self.calculate_flow(x, neigbor[:, i, ...]))
         
-        # 生成图像块
+        # generate image patches
         p_frames, patch_pos = get_patch(lr, p) # nt2crr, n2
         query_patch = p_frames[:, 1, 0, ...]
         key_patch = p_frames[:, 0, 0, ...]
         neigbor_patch = p_frames[:, 1, 1:, ...]
 
-        # 计算帧间初始特征张量
+        # clip optical flows
         f_frame = []
         for i in range(t - 1):
             flow_patch = patch_clip(flow_frame[i].unsqueeze(dim=1), patch_pos, self.scale, self.patch_size, is_hr=False).squeeze(dim=1)
             f_frame.append(self.prev_compress(torch.concat((query_patch, neigbor_patch[:, i, ...], flow_patch), dim=1)))
 
-        # 计算退化特征向量
+        # calculate degradation representations
         degrade_fea1, logits1, labels1 = self.Dnet1(query_patch, key_patch, is_train=True)
         degrade_fea2, logits2, labels2 = self.Dnet2(query_patch, key_patch, is_train=True)
         degrade_fea3, logits3, labels3 = self.Dnet3(query_patch, key_patch, is_train=True)
@@ -187,7 +187,7 @@ class DfnetFour(nn.Module):
         x = lr[:, 0, ...]
         neigbor = lr[:, 1:, ...]
 
-        # 计算流场和帧间初始特征张量
+        # calculate optical flows
         f_frame = []
         for i in range(t - 1):
             with torch.no_grad():

@@ -1,9 +1,50 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 
-from .common import BaseEncoder, BaseEncoderWithoutTail
-from .utils import get_patch
+
+class BaseEncoder(nn.Module):
+    def __init__(self, in_nc):
+        super(BaseEncoder, self).__init__()
+
+        self.resnet = models.resnet18()
+
+        self.features = None
+        self.resnet.avgpool.register_forward_hook(self.hook_fn)
+
+        self.resnet.layer4._modules['2'] = nn.Sequential(
+            nn.Conv2d(2048, 512, (1, 1), (1, 1), bias=False), 
+            nn.BatchNorm2d(512), 
+            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), bias=False), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU(inplace=True)
+        )
+
+        self.resnet.fc = nn.Sequential(
+            nn.Linear(512, 512), 
+            nn.ReLU(True),
+            nn.Linear(512, 256)
+        )
+
+        self.tail = nn.Sequential(
+            nn.Linear(256, 64), 
+            nn.ReLU(True), 
+            nn.Linear(64, 1), 
+            nn.Sigmoid()
+        )
+
+    def hook_fn(self, module, input, output):
+        self.features = output
+
+    def forward(self, x):
+
+        out = self.resnet(x)
+        fea = self.features.squeeze(-1).squeeze(-1)
+        res = self.tail(out).squeeze(-1).squeeze(-1)
+
+        return fea, out, res
+
 
 class Dnet(nn.Module):
     def __init__(self, opt, **kwargs):
@@ -66,6 +107,40 @@ class Dnet(nn.Module):
         else:
             embedding, _, _ = self.encoder_q(im_q)
             return embedding
+
+
+class BaseEncoderWithoutTail(nn.Module):
+    def __init__(self, in_nc):
+        super(BaseEncoderWithoutTail, self).__init__()
+
+        self.resnet = models.resnet101()
+
+        self.features = None
+        self.resnet.avgpool.register_forward_hook(self.hook_fn)
+
+        self.resnet.layer4._modules['2'] = nn.Sequential(
+            nn.Conv2d(2048, 512, (1, 1), (1, 1), bias=False), 
+            nn.BatchNorm2d(512), 
+            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), bias=False), 
+            nn.BatchNorm2d(512), 
+            nn.ReLU(inplace=True)
+        )
+
+        self.resnet.fc = nn.Sequential(
+            nn.Linear(512, 512), 
+            nn.ReLU(True),
+            nn.Linear(512, 256)
+        )
+
+    def hook_fn(self, module, input, output):
+        self.features = output
+
+    def forward(self, x):
+
+        out = self.resnet(x)
+        fea = self.features.squeeze(-1).squeeze(-1)
+
+        return fea, out
 
 
 class DnetWithoutTail(nn.Module):

@@ -3,10 +3,103 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-from .common import SRNet, ResNetBlock
 from .DNet import DnetWithoutTail
 from .LiteFlowNet.LFNet import LFNet
 from .utils import get_patch, patch_clip
+
+
+class DA_conv(nn.Module):
+    def __init__(self, in_nc, out_nc):
+        super(DA_conv, self).__init__()
+        self.channels_out = out_nc
+        self.channels_in = in_nc
+        self.kernel_size = 3
+
+        self.kernel = nn.Sequential(
+            nn.Linear(64, 64, bias=False),
+            nn.LeakyReLU(0.1, True),
+            nn.Linear(64, 64 * self.kernel_size * self.kernel_size, bias=False)
+        )
+        self.conv = nn.Conv2d(in_nc, out_nc, 1, 1, 0, bias=True)
+
+        self.relu = nn.LeakyReLU(0.1, True)
+
+    def forward(self, x):
+        '''
+        :param x[0]: feature map: B * C * H * W
+        :param x[1]: degradation representation: B * C
+        '''
+        b, c, h, w = x[0].size()
+
+        kernel = self.kernel(x[1]).view(-1, 1, self.kernel_size, self.kernel_size)
+        out = self.relu(F.conv2d(x[0].view(1, -1, h, w), kernel, groups=b*c, padding=(self.kernel_size-1)//2))
+        out = self.conv(out.view(b, -1, h, w))
+
+        return out
+
+
+class DABlock(nn.Module):
+    def __init__(self, nf):
+        super(DABlock, self).__init__()
+
+        self.da_conv = DA_conv(nf, nf)
+        self.conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+
+        self.relu = nn.LeakyReLU(0.1, True)
+
+    def forward(self, x):
+        '''
+        :param x[0]: feature map: B * C * H * W
+        :param x[1]: degradation representation: B * C
+        '''
+
+        out = self.relu(self.da_conv(x))
+        out = self.conv(out) + x[0]
+
+        return out
+    
+
+class SRNet(nn.Module):
+    def __init__(self, nf=64, nf2=16, nb=5):
+        super(SRNet, self).__init__()
+
+        self.nb = nb
+
+        self.compress = nn.Sequential(
+            nn.Linear(512, 64, bias=False), 
+            nn.LeakyReLU(0.1, True)
+        )
+
+        modules_body = [
+            DABlock(nf) for _ in range(self.nb)
+        ]
+        modules_body.append(nn.Conv2d(nf, nf2, 3, 1, 1, bias=True))
+        self.body = nn.Sequential(*modules_body)
+
+    def forward(self, fx, degrade):
+        degrade = self.compress(degrade)
+
+        res = fx
+        for i in range(self.nb):
+            res = self.body[i]([res, degrade])
+        res = self.body[-1](res)
+
+        return res
+
+
+class ResNetBlock(nn.Module):
+    def __init__(self, nf, kernel_size=3, stride=1, padding=1, bias=True):
+        super(ResNetBlock, self).__init__()
+        self.c1 = nn.Conv2d(nf, nf, kernel_size, stride, padding, bias=bias)
+        self.r1 = nn.LeakyReLU(0.1, False)
+        self.c2 = nn.Conv2d(nf, nf, kernel_size, stride, padding, bias=bias)
+        self.r2 = nn.LeakyReLU(0.1, False)
+
+    def forward(self, x):
+        out = self.r1(self.c1(x))
+        out += x
+        out = self.r2(out)
+        return out
 
 
 class Dfnet(nn.Module):
@@ -126,24 +219,24 @@ class Dfnet(nn.Module):
         neigbor = lr[:, 1:, ...]
 
         flow_frame = []
-        # 计算流场
+        # calculate optical flows
         for i in range(t - 1):
             with torch.no_grad():
                 flow_frame.append(self.calculate_flow(x, neigbor[:, i, ...]))
         
-        # 生成图像块
-        p_frames, patch_pos = get_patch(lr, p) # nt2crr, n2
+        # generate image patches
+        p_frames, patch_pos = get_patch(lr, p)
         query_patch = p_frames[:, 1, 0, ...]
         key_patch = p_frames[:, 0, 0, ...]
         neigbor_patch = p_frames[:, 1, 1:, ...]
 
-        # 计算帧间初始特征张量
+        # clip optical flows
         f_frame = []
         for i in range(t - 1):
             flow_patch = patch_clip(flow_frame[i].unsqueeze(dim=1), patch_pos, self.scale, self.patch_size, is_hr=False).squeeze(dim=1)
             f_frame.append(self.prev_compress(torch.concat((query_patch, neigbor_patch[:, i, ...], flow_patch), dim=1)))
 
-        # 计算退化特征向量
+        # calculate degradation representations
         degrade_fea, logits, labels = self.Dnet(query_patch, key_patch, is_train=True)
         
         res = F.interpolate(query_patch, scale_factor=self.scale, mode='bilinear', align_corners=False)
@@ -177,7 +270,7 @@ class Dfnet(nn.Module):
         x = lr[:, 0, ...]
         neigbor = lr[:, 1:, ...]
 
-        # 计算流场和帧间初始特征张量
+        # calculate optical flows
         f_frame = []
         for i in range(t - 1):
             with torch.no_grad():

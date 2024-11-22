@@ -1,12 +1,56 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 import functools
 
-from .common import SRNet_Single
+from .DFNet import DABlock
 from .DNet import DnetWithoutTail
-from .utils import get_patch, patch_clip, backward_warp, space_to_depth
+from .utils import get_patch
+
+
+class SRNet_Single(nn.Module):
+    def __init__(self, in_nc=3, out_nc=3, nf=64, nb=5, scale=2):
+        super(SRNet_Single, self).__init__()
+
+        self.s = scale
+        self.nb = nb
+
+        self.compress = nn.Sequential(
+            nn.Linear(2048, 64, bias=False), 
+            nn.LeakyReLU(0.1, True)
+        )
+
+        self.conv_in = nn.Sequential(
+            nn.Conv2d(in_nc, nf, 3, 1, 1, bias=True), 
+            nn.ReLU(inplace=True)
+        )
+
+        modules_body = [
+            DABlock(nf) for _ in range(self.nb)
+        ]
+        modules_body.append(nn.Conv2d(nf, nf, 3, 1, 1, bias=True))
+        self.body = nn.Sequential(*modules_body)
+
+        self.c1 = nn.Conv2d(nf, 4 * out_nc, 3, 1, 1, bias=True)
+        self.c2 = nn.PixelShuffle(2)
+
+    def forward(self, x, degrade):
+        degrade = self.compress(degrade)
+
+        out = F.interpolate(x, scale_factor=2, mode='bilinear', align_corners=False)
+
+        x = self.conv_in(x)
+        res = x
+        for i in range(self.nb):
+            res = self.body[i]([res, degrade])
+        res = self.body[-1](res)
+        res += x
+
+        res = self.c1(res)
+        res = self.c2(res)
+        out += F.sigmoid(res)
+
+        return out
 
 
 class DrnetFour(nn.Module):
@@ -46,7 +90,7 @@ class DrnetFour(nn.Module):
         '''
 
         # lr patches generate and save patch position
-        lr_patches, patch_pos = get_patch(lr, self.patch_size) # n2crr, n2
+        lr_patches, patch_pos = get_patch(lr, self.patch_size)
 
         # estimate degardation representation on one patch by DNet
         lr_query = lr_patches[:, 1, ...]
@@ -60,7 +104,7 @@ class DrnetFour(nn.Module):
         logits = [logits1, logits2, logits3, logits4]
         labels = [labels1, labels2, labels3, labels4]
 
-        hr = self.SRnet(lr_query, degrade_fea) # ncRR
+        hr = self.SRnet(lr_query, degrade_fea)
 
         return {
             'hr': hr, 

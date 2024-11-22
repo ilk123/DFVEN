@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 from .loss import CharbonnierLoss
 from .metrics import *
 from data.degrade.degradation import *
-from .utils import patch_clip, backward_warp
+from .utils import patch_clip
 from data.utils import pad_sequence, float32_to_uint8
 from utils import save_seqence, save_loss
 
@@ -35,7 +35,7 @@ class MInterface(pl.LightningModule):
     
     def on_train_start(self):
         # if self.global_step == 0:
-        #     D_state_dict = torch.load(self.hparams.deg_load_path[0])
+        #     D_state_dict = torch.load(self.hparams.deg_ckpt_dir[0])
         #     GD_state_dict = {k: v for k, v in D_state_dict.items() if k in self.model.Dnet.state_dict()}
         #     self.model.Dnet.load_state_dict(GD_state_dict)
         
@@ -44,19 +44,19 @@ class MInterface(pl.LightningModule):
         pass
 
         # if self.global_step == 0:
-        #     D_state_dict1 = torch.load(self.hparams.deg_load_path[0])
+        #     D_state_dict1 = torch.load(self.hparams.deg_ckpt_dir[0])
         #     GD_state_dict1 = {k: v for k, v in D_state_dict1.items() if k in self.model.Dnet1.state_dict()}
         #     self.model.Dnet1.load_state_dict(GD_state_dict1)
 
-        #     D_state_dict2 = torch.load(self.hparams.deg_load_path[1])
+        #     D_state_dict2 = torch.load(self.hparams.deg_ckpt_dir[1])
         #     GD_state_dict2 = {k: v for k, v in D_state_dict2.items() if k in self.model.Dnet2.state_dict()}
         #     self.model.Dnet2.load_state_dict(GD_state_dict2)
 
-        #     D_state_dict3 = torch.load(self.hparams.deg_load_path[2])
+        #     D_state_dict3 = torch.load(self.hparams.deg_ckpt_dir[2])
         #     GD_state_dict3 = {k: v for k, v in D_state_dict3.items() if k in self.model.Dnet3.state_dict()}
         #     self.model.Dnet3.load_state_dict(GD_state_dict3)
 
-        #     D_state_dict4 = torch.load(self.hparams.deg_load_path[3])
+        #     D_state_dict4 = torch.load(self.hparams.deg_ckpt_dir[3])
         #     GD_state_dict4 = {k: v for k, v in D_state_dict4.items() if k in self.model.Dnet4.state_dict()}
         #     self.model.Dnet4.load_state_dict(GD_state_dict4)
         
@@ -66,7 +66,7 @@ class MInterface(pl.LightningModule):
         # self.model.Dnet4.queue_ptr = torch.zeros(1, dtype=torch.long)
     
     def on_train_epoch_start(self):
-        self.degrade_data_generator = DataPrepare(self.device, self.hparams, 'total')
+        self.degrade_data_generator = DataPrepare(self.device, self.hparams, self.hparams.degrade_type)
     
     def training_step(self, batch, batch_idx):
         batch = self.degrade_data_generator(batch)
@@ -88,11 +88,6 @@ class MInterface(pl.LightningModule):
                 p_loss = v[0] * v[1](hr, gt_patch)
                 Loss += p_loss
                 self.Losses['p_loss'] = p_loss
-            elif k == 'warping':
-                lr_warp = backward_warp(output_dict['lr_prev'], output_dict['lr_flow'])
-                w_loss = v[0] * v[1](lr_warp, output_dict['lr_curr'])
-                Loss += w_loss
-                self.Losses['w_loss'] = w_loss
             elif k == 'degrade':
                 output = output_dict['logits']
                 target = output_dict['labels']
@@ -257,8 +252,6 @@ class MInterface(pl.LightningModule):
             w, loss = w_loss.split('*')
             if loss == 'pixel':
                 self.loss_function['pixel'] = [float(w), CharbonnierLoss]
-            elif loss == 'warping':
-                self.loss_function['warping'] = [float(w), CharbonnierLoss]
             elif loss == 'degrade':
                 self.loss_function['degrade'] = [float(w), F.cross_entropy]
             else:
