@@ -33,7 +33,7 @@ class Dfnet(nn.Module):
             nn.LeakyReLU(0.1, True)
         )
 
-        self.Dnet = DnetWithoutTail(opt, deg_dim=self.deg_dim//self.deg_num)
+        self.Dnet = DnetWithoutTail(opt, deg_dim=self.deg_dim)
         self.SRnet = SRNet(self.gen_nf, self.gen_nf2, self.gen_nb)
 
         module_misr = [

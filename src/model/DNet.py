@@ -98,7 +98,6 @@ class DnetWithoutTail(nn.Module):
         batch_size = keys.shape[0]
 
         ptr = int(self.queue_ptr)
-        # assert self.deg_K % batch_size == 0
 
         if ptr + batch_size > self.queue.size()[1]:
             self.queue[:, ptr:ptr+batch_size] = keys.transpose(0, 1)[:, :self.queue.size()[1]-ptr]

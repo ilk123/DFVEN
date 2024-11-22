@@ -1,1 +1,2 @@
-from .model_interface2 import DMInterface, MInterface
+from .degrade_model_interface import DMInterface
+from .model_interface import MInterface

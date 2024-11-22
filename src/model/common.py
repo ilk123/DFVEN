@@ -183,7 +183,7 @@ class SRNet(nn.Module):
         self.nb = nb
 
         self.compress = nn.Sequential(
-            nn.Linear(2048, 64, bias=False), 
+            nn.Linear(512, 64, bias=False), 
             nn.LeakyReLU(0.1, True)
         )
 

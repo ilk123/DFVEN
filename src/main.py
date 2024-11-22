@@ -40,24 +40,22 @@ def train_degrade(opt):
         logging_interval='epoch'
     ))
 
-    # for i in range(opt['deg_num']):
     if opt['logger'] == 'tensorboard':
         tb_logger = pl_loggers.TensorBoardLogger(
             save_dir=opt['logger_dir'], 
-            # version=f'{i:03d}', 
-            log_graph=True
+            name=None, 
+            log_graph=True, 
+            version=opt['degrade_type']
         )
     
     d_data_module = DDInterface(**opt)
-    # d_model = DMInterface(**opt, **{'i': i})
     d_model = DMInterface(**opt)
 
-    d_trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger, callbacks=d_callbacks, fast_dev_run=False, max_epochs=opt['degrade_epoch'] // opt['deg_num'], log_every_n_steps=opt['deg_logger_freq'])
+    d_trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger, callbacks=d_callbacks, fast_dev_run=False, max_epochs=opt['degrade_epoch'], log_every_n_steps=opt['deg_logger_freq'])
 
     d_trainer.fit(d_model, d_data_module)
 
 def train(opt):
-
     callbacks = []
     callbacks.append(plc.ModelCheckpoint(
         dirpath=opt['logger_ckpt_dir'],
@@ -70,19 +68,12 @@ def train(opt):
     callbacks.append(plc.LearningRateMonitor(
         logging_interval='epoch'
     ))
-    # callbacks.append(plc.EarlyStopping(
-    #     monitor='SSIM', 
-    #     mode='max',
-    #     patience=2,
-    #     stopping_threshold=0.97, 
-    #     check_on_train_epoch_end=True
-    # ))
     
     if opt['logger'] == 'tensorboard':
         tb_logger = pl_loggers.TensorBoardLogger(
             save_dir=opt['logger_dir'], 
-            # version=f'{(i+1):03d}', 
-            version=f'{100}', 
+            name=None, 
+            version=opt['degrade_type'], 
             log_graph=False
         )
 
@@ -92,16 +83,16 @@ def train(opt):
     trainer1 = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
     
     trainer1.fit(model1, data_module1)
-    trainer1.save_checkpoint(osp.join(opt['logger_ckpt_dir'], '6.ckpt'))
+    trainer1.save_checkpoint(osp.join(opt['temp_ckpt_dir'], 'temp.ckpt'))
 
-    opt['deg_batch_size'] = opt['deg_batch_size'] * 2
+    # opt['deg_batch_size'] = opt['deg_batch_size'] * 2
     data_module2 = DInterface(**opt, **{'train_data_name': opt['train_data_name2'], 'train_data_dir': opt['train_data_dir2'], 'train_batch_size': opt['train_batch_size2']})
     model2 = MInterface(**opt)
 
     trainer2 = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'] + opt['generator_epoch2'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
 
-    if opt['gen_load_path'] is not None and os.path.exists(opt['gen_load_path']):
-        trainer2.fit(model2, data_module2, ckpt_path=opt['gen_load_path'])
+    if opt['temp_ckpt_dir'] is not None and os.path.exists(opt['temp_ckpt_dir']):
+        trainer2.fit(model2, data_module2, ckpt_path=opt['temp_ckpt_dir'])
 
 #测试评价指标，使用xxx_test.yaml 
 def test(opt):
@@ -182,7 +173,7 @@ def predict(opt):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--opt_yaml', default='total-4x-no-seg.yaml', type=str)
+    parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
     parser.add_argument('--mode', default='train', type=str)
     args = parser.parse_args()
 

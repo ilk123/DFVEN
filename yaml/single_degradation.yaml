@@ -1,0 +1,117 @@
+# single degradation from blur, noise, low-light or red-hue
+
+# basic configs
+seed: 123
+gpu: 0
+
+# degradation configs
+
+degrade_type: blur  # choose from [blur, noise, light, red]
+random: true
+scale: 2
+
+blur_type: isotropic
+blur_ksize: 7
+blur_sigma_max: 4.0
+blur_sigma_min: 0.2
+
+gaussian_noise: 30
+
+light_alpha_max: 0.9
+light_alpha_min: 1.0
+light_beta_max: 0.5
+light_beta_min: 1.0
+light_gamma_min: 1.0
+light_gamma_max: 2.5
+
+red_clip: 0
+red_x_min: 80
+red_x_range: 40
+red_y_min: 130
+red_y_range: 40
+
+# dataset configs
+deg_data_name: div2k
+deg_data_dir: E:/PELD/enhancing/data/DF2K/GT.lmdb
+deg_valid_dir: E:/PELD/enhancing/data/data/DIV2K/DIV2K_train_HR
+deg_batch_size: 64
+deg_num_workers: 0
+deg_pin_memory: true
+deg_data_type: rgb
+
+train_data_name1: inter4k
+train_data_name2: endoscope
+train_data_dir1: E:/PELD/enhancing/data/Inter4K/GT.lmdb
+train_data_dir2: E:/PELD/enhancing/data/Endoscope/GT1.lmdb
+valid_lr_dir: E:/PELD/enhancing/data/Endoscope/test/Gaussian2xLR
+valid_gt_dir: E:/PELD/enhancing/data/Endoscope/test/GT
+train_batch_size1: 16
+train_batch_size2: 16
+train_num_workers: 0
+train_pin_memory: true
+train_data_type: rgb
+
+patch_size: 48
+
+# model configs
+deg_model_name: DNet
+deg_in_nc: 3
+deg_dim: 256
+deg_K: 7168
+deg_T: 0.07
+deg_m: 0.999
+deg_load_path: ./ckpt/single_degradation/blur.ckpt
+
+gen_model_name: DFNet
+gen_in_nc: 3
+gen_out_nc: 3
+gen_nf: 64
+gen_nf2: 16
+gen_nb: 5
+gen_nr: 3
+gen_lp: ./ckpt/single_degradation/blur.ckpt
+
+# train configs
+tempo_range: 4
+degrade_epoch: 100
+generator_epoch1: 6
+generator_epoch2: 1
+
+deg_lr: !!float 1e-4
+deg_scheduler: StepLR
+deg_step_size: 4000
+deg_gamma: 0.1
+
+gen_lr: !!float 1e-4
+gen_scheduler: MultiStepLR
+gen_milestones: [3715, 7430, 11145]
+gen_gamma: 0.1
+
+deg_loss: 0.01*contrastive+1*regress
+gen_loss: 1*pixel
+
+# validation configs
+interval: 0.5
+
+padding_mode: reflect
+n_pad_front: 3
+
+metrics: ['PSNR', 'SSIM', 'tOF']
+metrics_colorspace: y
+
+logger: tensorboard
+deg_logger_freq: 25
+gen_logger_freq: 2000
+logger_dir: ./log/single_degradation
+logger_ckpt_dir: ./ckpt/single_degradation
+batch_loss_file: ./log/single_degradation/blur/batch_loss.txt
+epoch_loss_file: ./log/single_degradation/blur/epoch_loss.txt
+
+# test configs
+deg_load_path: ./ckpt/single_degradation/d_epoch=299_con_reg.ckpt
+gen_load_path: ./ckpt/single_degradation/epoch=06.ckpt
+test_lr_dir: E:/PELD/enhancing/data/Endoscope/test/Gaussian2xLR
+test_gt_dir: E:/PELD/enhancing/data/Endoscope/test/GT
+metrics_file: ./log/single_degradation/test/metrics.txt
+seq_file_path: ./log/single_degradation/test/results 
+seq_conbine_file_path: ./log/single_degradation/test/results/combine
