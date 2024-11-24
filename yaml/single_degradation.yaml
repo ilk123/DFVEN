@@ -2,11 +2,9 @@
 
 # basic configs
 seed: 123
-gpu: 0
 
 # degradation configs
 
-degrade_type: blur  # choose from [blur, noise, light, red]
 random: true
 scale: 2
 
@@ -54,15 +52,13 @@ train_data_type: rgb
 patch_size: 48
 
 # model configs
-deg_model_name: DNet
 deg_in_nc: 3
 deg_dim: 256
 deg_K: 7168
 deg_T: 0.07
 deg_m: 0.999
-deg_ckpt_dir: ./ckpt/single_degradation/blur.ckpt
+deg_ckpt_dir: ['./ckpt/single_degradation/blur.ckpt']
 
-gen_model_name: DFVEN
 gen_in_nc: 3
 gen_out_nc: 3
 gen_nf: 64
@@ -104,14 +100,3 @@ deg_logger_freq: 25
 gen_logger_freq: 2000
 logger_dir: ./log/single_degradation
 logger_ckpt_dir: ./ckpt/single_degradation
-batch_loss_file: ./log/single_degradation/blur/batch_loss.txt
-epoch_loss_file: ./log/single_degradation/blur/epoch_loss.txt
-
-# test configs
-deg_load_path: ./ckpt/single_degradation/d_epoch=299_con_reg.ckpt
-gen_load_path: ./ckpt/single_degradation/epoch=06.ckpt
-test_lr_dir: E:/PELD/enhancing/data/Endoscope/test/Gaussian2xLR
-test_gt_dir: E:/PELD/enhancing/data/Endoscope/test/GT
-metrics_file: ./log/single_degradation/blur/test/metrics.txt
-seq_file_path: ./log/single_degradation/blur/test/results
-seq_conbine_file_path: ./log/single_degradation/blur/test/results/combine

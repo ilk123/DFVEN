@@ -13,14 +13,6 @@ class BaseEncoder(nn.Module):
         self.features = None
         self.resnet.avgpool.register_forward_hook(self.hook_fn)
 
-        self.resnet.layer4._modules['2'] = nn.Sequential(
-            nn.Conv2d(2048, 512, (1, 1), (1, 1), bias=False), 
-            nn.BatchNorm2d(512), 
-            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), bias=False), 
-            nn.BatchNorm2d(512), 
-            nn.ReLU(inplace=True)
-        )
-
         self.resnet.fc = nn.Sequential(
             nn.Linear(512, 512), 
             nn.ReLU(True),
@@ -117,14 +109,6 @@ class BaseEncoderWithoutTail(nn.Module):
 
         self.features = None
         self.resnet.avgpool.register_forward_hook(self.hook_fn)
-
-        self.resnet.layer4._modules['2'] = nn.Sequential(
-            nn.Conv2d(2048, 512, (1, 1), (1, 1), bias=False), 
-            nn.BatchNorm2d(512), 
-            nn.Conv2d(512, 512, (3, 3), (1, 1), (1, 1), bias=False), 
-            nn.BatchNorm2d(512), 
-            nn.ReLU(inplace=True)
-        )
 
         self.resnet.fc = nn.Sequential(
             nn.Linear(512, 512), 
