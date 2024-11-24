@@ -23,8 +23,7 @@ def test(opt):
     data_module = DInterface(**opt, **{'train_data_name': opt['train_data_name2'], 'train_data_dir': opt['train_data_dir2']})
     model = MInterface(**opt)
     trainer = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger)
-    trainer.test(model, data_module)
-    # trainer.test(model, data_module, opt['gen_load_path'])
+    trainer.test(model, data_module, opt['gen_load_path'])
 
 def test_degrade(opt):
     if opt['logger'] == 'tensorboard':
@@ -37,8 +36,7 @@ def test_degrade(opt):
     data_module = DDInterface(**opt)
     model = DMInterface(**opt)
     trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger)
-    trainer.test(model, data_module)
-    # trainer.test(model, data_module, opt['deg_load_path'])
+    trainer.test(model, data_module, opt['deg_load_path'])
 
 if __name__ == '__main__':
     parser = ArgumentParser()
