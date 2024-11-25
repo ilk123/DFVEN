@@ -40,7 +40,7 @@ def train_degrade(opt):
     d_data_module = DDInterface(**opt)
     d_model = DMInterface(**opt)
 
-    d_trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger, callbacks=d_callbacks, fast_dev_run=False, max_epochs=opt['degrade_epoch'], log_every_n_steps=opt['deg_logger_freq'])
+    d_trainer = Trainer(accelerator=opt['accelerator'], devices=opt['device'], logger=tb_logger, callbacks=d_callbacks, fast_dev_run=False, max_epochs=opt['degrade_epoch'], log_every_n_steps=opt['deg_logger_freq'])
 
     d_trainer.fit(d_model, d_data_module)
 
@@ -69,7 +69,7 @@ def train(opt):
     data_module1 = DInterface(**opt, **{'train_data_name': opt['train_data_name1'], 'train_data_dir': opt['train_data_dir1'], 'train_batch_size': opt['train_batch_size1']})
     model1 = MInterface(**opt)
 
-    trainer1 = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
+    trainer1 = Trainer(accelerator=opt['accelerator'], devices=opt['device'], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
     
     trainer1.fit(model1, data_module1)
     trainer1.save_checkpoint(osp.join(opt['temp_ckpt_dir'], 'temp.ckpt'))
@@ -77,7 +77,7 @@ def train(opt):
     data_module2 = DInterface(**opt, **{'train_data_name': opt['train_data_name2'], 'train_data_dir': opt['train_data_dir2'], 'train_batch_size': opt['train_batch_size2']})
     model2 = MInterface(**opt)
 
-    trainer2 = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'] + opt['generator_epoch2'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
+    trainer2 = Trainer(accelerator=opt['accelerator'], devices=opt['device'], logger=tb_logger, callbacks=callbacks, max_epochs=opt['generator_epoch1'] + opt['generator_epoch2'], log_every_n_steps=opt['gen_logger_freq'], val_check_interval=opt['interval'], num_sanity_val_steps=0)
 
     if opt['temp_ckpt_dir'] is not None and os.path.exists(opt['temp_ckpt_dir']):
         trainer2.fit(model2, data_module2, ckpt_path=opt['temp_ckpt_dir'])
@@ -87,9 +87,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--device', default=0, type=int, help='GPU number (-1 for CPU only)')
     parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
-    parser.add_argument('--mode', default='train', type=str, help='train or train_degrade')
-    parser.add_argument('--degrade_type', default='all', type=str, help='degradation type (blur, noise, red, light, and all)')
-    parser.add_argument('--model', default='DFVEN', type=str, help='model to run')
+    parser.add_argument('--mode', default='train_degrade', type=str, help='train or train_degrade')
+    parser.add_argument('--degrade_type', default='noise', type=str, help='degradation type (blur, noise, red, light, and all)')
+    parser.add_argument('--model', default='DNet', type=str, help='model to run')
 
     args = parser.parse_args()
 
@@ -105,11 +105,13 @@ if __name__ == '__main__':
     elif args.mode == 'train_degrade':
         opt['deg_model_name'] = args.model
     
-    if opt['gpu'] >= 0:
+    if args.device >= 0:
         opt['accelerator'] = 'gpu'
     else:
         opt['accelerator'] = 'cpu'
 
+    opt['device'] = [args.device]
+    opt['degrade_type'] = args.degrade_type
     opt['batch_loss_file'] = f'./log/single_degradation/{args.degrade_type}/batch_loss.txt'
     opt['epoch_loss_file'] = f'./log/single_degradation/{args.degrade_type}/epoch_loss.txt'
 

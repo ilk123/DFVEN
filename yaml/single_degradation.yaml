@@ -58,6 +58,7 @@ deg_K: 7168
 deg_T: 0.07
 deg_m: 0.999
 deg_ckpt_dir: ['./ckpt/single_degradation/blur.ckpt']
+# deg_ckpt_dir: ~
 
 gen_in_nc: 3
 gen_out_nc: 3

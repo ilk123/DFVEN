@@ -22,7 +22,7 @@ def test(opt):
 
     data_module = DInterface(**opt, **{'train_data_name': opt['train_data_name2'], 'train_data_dir': opt['train_data_dir2']})
     model = MInterface(**opt)
-    trainer = Trainer(accelerator=opt['accelerator'], devices=[0], logger=tb_logger)
+    trainer = Trainer(accelerator=opt['accelerator'], devices=opt['device'], logger=tb_logger)
     trainer.test(model, data_module, opt['gen_load_path'])
 
 def test_degrade(opt):
@@ -35,7 +35,7 @@ def test_degrade(opt):
         )
     data_module = DDInterface(**opt)
     model = DMInterface(**opt)
-    trainer = Trainer(accelerator=opt['accelerator'], devices=1, logger=tb_logger)
+    trainer = Trainer(accelerator=opt['accelerator'], devices=opt['device'], logger=tb_logger)
     trainer.test(model, data_module, opt['deg_load_path'])
 
 if __name__ == '__main__':
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', default=0, type=int, help='GPU number (-1 for CPU only)')
     parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
     parser.add_argument('--mode', default='test', type=str, help='test or test_degrade')
-    parser.add_argument('--degrade_type', default='all', type=str, help='degradation type (blur, noise, red, light, and all)')
+    parser.add_argument('--degrade_type', default='light', type=str, help='degradation type (blur, noise, red, light, and all)')
     parser.add_argument('--model', default='DFVEN', type=str, help='model to run')
     parser.add_argument('--pertrained_model', default='', type=str, help='pertrained model')
     parser.add_argument('--test_lr_path', default='', type=str)
@@ -66,11 +66,13 @@ if __name__ == '__main__':
         opt['deg_model_name'] = args.model
         opt['deg_load_path'] = args.pertrained_model
     
-    if opt['gpu'] >= 0:
+    if args.device >= 0:
         opt['accelerator'] = 'gpu'
     else:
         opt['accelerator'] = 'cpu'
 
+    opt['device'] = [args.device]
+    opt['degrade_type'] = args.degrade_type
     opt['test_lr_dir'] = args.test_lr_path
     opt['test_gt_dir'] = args.test_gt_path
     opt['metrics_file'] = f'./log/single_degradation/{args.degrade_type}/test/metrics.txt'
