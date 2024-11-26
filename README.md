@@ -18,7 +18,7 @@ ___
 ### Installation
 
 This repository is built in PyTorch 2.2.1 and tested on Windows 11 environment (Python3.10, CUDA12.3).
-Follow these intructions
+Follow these instructions
 
 1. Clone our repository
 ```
@@ -48,14 +48,14 @@ Example usage to perform noise enhancement on a directory of images:
 ```
 python demo.py --mode test --degrade_type noise --model DFVEN --input_dir './test/noise/0' --pertrained_model './ckpt/noise.ckpt' --result_dir './results/noise'
 ```
-Example usage to perform endoscopic enhancement on multiple directory of images:
+Example usage to perform endoscopic enhancement on multiple directories of images:
 ```
 python demo.py --mode test --degrade_type endoscopic --model DFVEN_four --input_dir './test/endoscopic' --pertrained_model './ckpt/endoscopic.ckpt' --result_dir './results/endoscopic'
 ```
 
 ### Training and Evaluation
 
-To train and evaluation the DFVEN models of different degradation types on your own images, you can either use command line as following: 
+To train and evaluate the DFVEN models of different degradation types on your own images, you can either use the command line as follows: 
 
 #### Training
 ```
