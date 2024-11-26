@@ -67,7 +67,7 @@ class DMInterface(pl.LightningModule):
         # self.logger.experiment.add_embedding(self.embeddings['feature'], self.embeddings['meta_data'], self.embeddings['label_img'], self.current_epoch, 'embedding')
     
     def on_train_end(self):
-        torch.save(self.model.state_dict(), self.hparams.deg_load_path[0])
+        torch.save(self.model.state_dict(), self.hparams.deg_pth_dir[0])
     
     def on_test_start(self):
         embedding = []
