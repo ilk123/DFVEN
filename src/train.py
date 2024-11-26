@@ -18,8 +18,8 @@ def train_degrade(opt):
 
     d_callbacks = []
     d_callbacks.append(plc.ModelCheckpoint(
-        dirpath=opt['logger_ckpt_dir'], 
-        filename='d_{epoch:03d}_con_reg', 
+        dirpath=opt['logger_ckpt_dir'] + opt['degrade_type'], 
+        filename='d_{epoch:03d}', 
         save_top_k=1, 
         every_n_epochs=20, 
         save_on_train_epoch_end=True, 
@@ -47,7 +47,7 @@ def train_degrade(opt):
 def train(opt):
     callbacks = []
     callbacks.append(plc.ModelCheckpoint(
-        dirpath=opt['logger_ckpt_dir'],
+        dirpath=opt['logger_ckpt_dir'] + opt['degrade_type'],
         filename='{epoch:02d}', 
         save_top_k=1, 
         every_n_epochs=1, 
