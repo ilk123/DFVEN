@@ -18,7 +18,7 @@ def train_degrade(opt):
 
     d_callbacks = []
     d_callbacks.append(plc.ModelCheckpoint(
-        dirpath=opt['logger_ckpt_dir'] + opt['degrade_type'], 
+        dirpath='{}/{}'.format(opt['logger_ckpt_dir'], opt['degrade_type']), 
         filename='d_{epoch:03d}', 
         save_top_k=1, 
         every_n_epochs=20, 
@@ -47,7 +47,7 @@ def train_degrade(opt):
 def train(opt):
     callbacks = []
     callbacks.append(plc.ModelCheckpoint(
-        dirpath=opt['logger_ckpt_dir'] + opt['degrade_type'],
+        dirpath='{}/{}'.format(opt['logger_ckpt_dir'], opt['degrade_type']),
         filename='{epoch:02d}', 
         save_top_k=1, 
         every_n_epochs=1, 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', default=0, type=int, help='GPU number (-1 for CPU only)')
     parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
     parser.add_argument('--mode', default='train_degrade', type=str, help='train or train_degrade')
-    parser.add_argument('--degrade_type', default='noise', type=str, help='degradation type (blur, noise, red, light, and all)')
+    parser.add_argument('--degrade_type', default='blur', type=str, help='degradation type (blur, noise, red, light, and all)')
     parser.add_argument('--model', default='DNet', type=str, help='model to run')
 
     args = parser.parse_args()

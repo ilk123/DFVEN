@@ -31,7 +31,7 @@ red_y_range: 40
 # dataset configs
 deg_data_name: div2k
 deg_data_dir: M:/XHD/imageSR/DF2K/GT.lmdb
-deg_valid_dir: M:/XHD/imageSR/DF2K/DIV2K_valid_HR
+deg_valid_dir: M:/XHD/imageSR/data/DIV2K/DIV2K_train_HR
 deg_batch_size: 64
 deg_num_workers: 0
 deg_pin_memory: true

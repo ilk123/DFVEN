@@ -43,12 +43,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--device', default=0, type=int, help='GPU number (-1 for CPU only)')
     parser.add_argument('--opt_yaml', default='single_degradation.yaml', type=str)
-    parser.add_argument('--mode', default='test', type=str, help='test or test_degrade')
-    parser.add_argument('--degrade_type', default='light', type=str, help='degradation type (blur, noise, red, light, and all)')
-    parser.add_argument('--model', default='DFVEN', type=str, help='model to run')
-    parser.add_argument('--pertrained_model', default='', type=str, help='pertrained model')
+    parser.add_argument('--mode', default='test_degrade', type=str, help='test or test_degrade')
+    parser.add_argument('--degrade_type', default='blur', type=str, help='degradation type (blur, noise, red, light, and all)')
+    parser.add_argument('--model', default='DNet', type=str, help='model to run')
+    parser.add_argument('--pertrained_model', default='./ckpt/single_degradation/blur/d_epoch=099.ckpt', type=str, help='pertrained model')
     parser.add_argument('--test_lr_path', default='', type=str)
-    parser.add_argument('--test_gt_path', default='', type=str)
+    parser.add_argument('--test_gt_path', default='M:/XHD/imageSR/data/DIV2K/DIV2K_train_HR', type=str)
 
     args = parser.parse_args()
 
