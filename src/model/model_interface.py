@@ -57,6 +57,19 @@ class MInterface(pl.LightningModule):
             self.model.Dnet3.queue_ptr = torch.zeros(1, dtype=torch.long)
             self.model.Dnet4.queue_ptr = torch.zeros(1, dtype=torch.long)
         
+        elif self.hparams.degrade_type == 'blur_noise' and self.hparams.deg_pth_dir is not None:
+            if self.global_step == 0:
+                D_state_dict1 = torch.load(self.hparams.deg_pth_dir[0])
+                GD_state_dict1 = {k: v for k, v in D_state_dict1.items() if k in self.model.Dnet1.state_dict()}
+                self.model.Dnet1.load_state_dict(GD_state_dict1)
+
+                D_state_dict2 = torch.load(self.hparams.deg_pth_dir[1])
+                GD_state_dict2 = {k: v for k, v in D_state_dict2.items() if k in self.model.Dnet2.state_dict()}
+                self.model.Dnet2.load_state_dict(GD_state_dict2)
+            
+            self.model.Dnet1.queue_ptr = torch.zeros(1, dtype=torch.long)
+            self.model.Dnet2.queue_ptr = torch.zeros(1, dtype=torch.long)
+        
         elif self.hparams.deg_pth_dir is not None:
             if self.global_step == 0:
                 D_state_dict = torch.load(self.hparams.deg_pth_dir[0])

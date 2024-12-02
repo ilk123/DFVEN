@@ -3,108 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+from .DFVEN import SRNet, ResNetBlock
 from .DNet import DnetWithoutTail
 from .LiteFlowNet.LFNet import LFNet
 from .utils import get_patch, patch_clip
 
 
-class DA_conv(nn.Module):
-    def __init__(self, in_nc, out_nc):
-        super(DA_conv, self).__init__()
-        self.channels_out = out_nc
-        self.channels_in = in_nc
-        self.kernel_size = 3
-
-        self.kernel = nn.Sequential(
-            nn.Linear(64, 64, bias=False),
-            nn.LeakyReLU(0.1, True),
-            nn.Linear(64, 64 * self.kernel_size * self.kernel_size, bias=False)
-        )
-        self.conv = nn.Conv2d(in_nc, out_nc, 1, 1, 0, bias=True)
-
-        self.relu = nn.LeakyReLU(0.1, True)
-
-    def forward(self, x):
-        '''
-        :param x[0]: feature map: B * C * H * W
-        :param x[1]: degradation representation: B * C
-        '''
-        b, c, h, w = x[0].size()
-
-        kernel = self.kernel(x[1]).view(-1, 1, self.kernel_size, self.kernel_size)
-        out = self.relu(F.conv2d(x[0].view(1, -1, h, w), kernel, groups=b*c, padding=(self.kernel_size-1)//2))
-        out = self.conv(out.view(b, -1, h, w))
-
-        return out
-
-
-class DABlock(nn.Module):
-    def __init__(self, nf):
-        super(DABlock, self).__init__()
-
-        self.da_conv = DA_conv(nf, nf)
-        self.conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-
-        self.relu = nn.LeakyReLU(0.1, True)
-
-    def forward(self, x):
-        '''
-        :param x[0]: feature map: B * C * H * W
-        :param x[1]: degradation representation: B * C
-        '''
-
-        out = self.relu(self.da_conv(x))
-        out = self.conv(out) + x[0]
-
-        return out
-    
-
-class SRNet(nn.Module):
-    def __init__(self, nf=64, nf2=16, nb=5):
-        super(SRNet, self).__init__()
-
-        self.nb = nb
-
-        self.compress = nn.Sequential(
-            nn.Linear(1024, 64, bias=False), 
-            nn.LeakyReLU(0.1, True)
-        )
-
-        modules_body = [
-            DABlock(nf) for _ in range(self.nb)
-        ]
-        modules_body.append(nn.Conv2d(nf, nf2, 3, 1, 1, bias=True))
-        self.body = nn.Sequential(*modules_body)
-
-    def forward(self, fx, degrade):
-        degrade = self.compress(degrade)
-
-        res = fx
-        for i in range(self.nb):
-            res = self.body[i]([res, degrade])
-        res = self.body[-1](res)
-
-        return res
-
-
-class ResNetBlock(nn.Module):
-    def __init__(self, nf, kernel_size=3, stride=1, padding=1, bias=True):
-        super(ResNetBlock, self).__init__()
-        self.c1 = nn.Conv2d(nf, nf, kernel_size, stride, padding, bias=bias)
-        self.r1 = nn.LeakyReLU(0.1, False)
-        self.c2 = nn.Conv2d(nf, nf, kernel_size, stride, padding, bias=bias)
-        self.r2 = nn.LeakyReLU(0.1, False)
-
-    def forward(self, x):
-        out = self.r1(self.c1(x))
-        out += x
-        out = self.r2(out)
-        return out
-
-
-class Dfven(nn.Module):
+class DfvenTwo(nn.Module):
     def __init__(self, opt, **kwargs):
-        super(Dfven, self).__init__()
+        super(DfvenTwo, self).__init__()
         for kw, args in opt.items():
             setattr(self, kw, args)
         
@@ -126,7 +33,8 @@ class Dfven(nn.Module):
             nn.LeakyReLU(0.1, True)
         )
 
-        self.Dnet = DnetWithoutTail(opt, deg_dim=self.deg_dim)
+        self.Dnet1 = DnetWithoutTail(opt, deg_dim=self.deg_dim)
+        self.Dnet2 = DnetWithoutTail(opt, deg_dim=self.deg_dim)
         self.SRnet = SRNet(self.gen_nf, self.gen_nf2, self.gen_nb)
 
         module_misr = [
@@ -225,7 +133,7 @@ class Dfven(nn.Module):
                 flow_frame.append(self.calculate_flow(x, neigbor[:, i, ...]))
         
         # generate image patches
-        p_frames, patch_pos = get_patch(lr, p)
+        p_frames, patch_pos = get_patch(lr, p) # nt2crr, n2
         query_patch = p_frames[:, 1, 0, ...]
         key_patch = p_frames[:, 0, 0, ...]
         neigbor_patch = p_frames[:, 1, 1:, ...]
@@ -237,8 +145,13 @@ class Dfven(nn.Module):
             f_frame.append(self.prev_compress(torch.concat((query_patch, neigbor_patch[:, i, ...], flow_patch), dim=1)))
 
         # calculate degradation representations
-        degrade_fea, logits, labels = self.Dnet(query_patch, key_patch, is_train=True)
-        
+        degrade_fea1, logits1, labels1 = self.Dnet1(query_patch, key_patch, is_train=True)
+        degrade_fea2, logits2, labels2 = self.Dnet2(query_patch, key_patch, is_train=True)
+
+        degrade_fea = torch.concat((degrade_fea1, degrade_fea2), dim=1)
+        logits = [logits1, logits2]
+        labels = [labels1, labels2]
+
         res = F.interpolate(query_patch, scale_factor=self.scale, mode='bilinear', align_corners=False)
         query_patch_in = self.conv_in(query_patch)
 
@@ -277,8 +190,10 @@ class Dfven(nn.Module):
                 flow_frame = self.calculate_flow(x, neigbor[:, i, ...])
             f_frame.append(self.prev_compress(torch.concat((x, neigbor[:, i, ...], flow_frame), dim=1)))
 
-        degrade_fea = self.Dnet(x, x, is_train=False)
-        
+        degrade_fea1 = self.Dnet1(x, x, is_train=False)
+        degrade_fea2 = self.Dnet2(x, x, is_train=False)
+        degrade_fea = torch.concat((degrade_fea1, degrade_fea2), dim=1)
+
         res = F.interpolate(x, scale_factor=self.scale, mode='bilinear', align_corners=False)
         x_in = self.conv_in(x)
 
